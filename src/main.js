@@ -29,15 +29,11 @@ const months = [
   'ديسمبر',
 ];
 
-const dates = [...new Set(SESSIONS.map(({ date }) => date))].sort();
-
 const allEmails = (session) => [session.email, ...session.guests];
 
 const isChecked = (state, email) => Boolean(state[email]);
 
 const arabicDigits = (value) => String(value);
-
-const personName = (email) => PERSON_NAMES_AR[email] || 'زائر';
 
 const formatTime = (time) => {
   const [hour, minute] = time.split(':').map(Number);
@@ -59,6 +55,16 @@ const formatDay = (value) => {
 };
 
 const initial = (value) => value.replace(/^ال/, '').trim()[0] || 'ز';
+
+// Generates a stable-ish internal identifier for a manually added
+// organization so it has an "email" key to track check-in status by,
+// even when no real email address is entered.
+const slugify = (value) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/(^-|-$)/g, '') || 'jihah';
 
 function Stat({ value, label, accent = false }) {
   return (
@@ -88,12 +94,168 @@ function Stat({ value, label, accent = false }) {
   );
 }
 
+function AddSessionModal({ onClose, onSave }) {
+  const [orgAr, setOrgAr] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [formError, setFormError] = useState('');
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    if (!orgAr.trim() || !date || !time) {
+      setFormError('الرجاء إدخال اسم الجهة والتاريخ والوقت.');
+      return;
+    }
+
+    onSave({
+      orgAr: orgAr.trim(),
+      contactName: contactName.trim(),
+      date,
+      time,
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-2xl sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-extrabold text-slate-900">
+            إضافة جهة جديدة
+          </h2>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="إغلاق"
+            className="focus-ring flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-bold text-slate-700">
+              اسم الجهة
+            </label>
+            <input
+              type="text"
+              value={orgAr}
+              onChange={(event) => setOrgAr(event.target.value)}
+              placeholder="مثال: وزارة الطاقة والبنية التحتية"
+              className="focus-ring w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-bold text-slate-700">
+              اسم الشخص المسؤول (اختياري)
+            </label>
+            <input
+              type="text"
+              value={contactName}
+              onChange={(event) => setContactName(event.target.value)}
+              placeholder="مثال: أحمد محمد"
+              className="focus-ring w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                اليوم
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="focus-ring w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                الوقت
+              </label>
+              <input
+                type="time"
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+                className="focus-ring w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900"
+              />
+            </div>
+          </div>
+
+          {formError && (
+            <p className="text-sm text-rose-600">{formError}</p>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="focus-ring min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+
+            <button
+              type="submit"
+              className="focus-ring min-h-11 flex-1 rounded-xl bg-blue-700 text-sm font-bold text-white hover:bg-blue-800"
+            >
+              إضافة
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [checkins, setCheckins] = useState({});
-  const [activeDate, setActiveDate] = useState(dates[0]);
+  const [customSessions, setCustomSessions] = useState([]);
+  const [customNames, setCustomNames] = useState({});
+  const [activeDate, setActiveDate] = useState(
+    () => [...new Set(SESSIONS.map(({ date }) => date))].sort()[0],
+  );
   const [openSessions, setOpenSessions] = useState(new Set());
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
+  const allSessions = useMemo(
+    () => [...SESSIONS, ...customSessions],
+    [customSessions],
+  );
+
+  const nameMap = useMemo(
+    () => ({ ...PERSON_NAMES_AR, ...customNames }),
+    [customNames],
+  );
+
+  const personName = (email) => nameMap[email] || 'زائر';
+
+  const dates = useMemo(
+    () => [...new Set(allSessions.map(({ date }) => date))].sort(),
+    [allSessions],
+  );
 
   useEffect(() => {
     if (!supabase) return;
@@ -201,12 +363,40 @@ function App() {
     }
   };
 
+  const handleAddSession = ({ orgAr, contactName, date, time }) => {
+    const baseSlug = slugify(orgAr);
+    const email = `${baseSlug}-${Date.now()}@manual.local`;
+
+    setCustomSessions((current) => [
+      ...current,
+      {
+        id: `custom-${Date.now()}`,
+        name: contactName || orgAr,
+        email,
+        org: orgAr,
+        orgAr,
+        date,
+        time,
+        guests: [],
+      },
+    ]);
+
+    if (contactName) {
+      setCustomNames((current) => ({
+        ...current,
+        [email]: contactName,
+      }));
+    }
+
+    setActiveDate(date);
+    setIsAddOpen(false);
+  };
+
   const selectedSessions = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
 
-    return SESSIONS.filter(
-      (session) => session.date === activeDate,
-    )
+    return allSessions
+      .filter((session) => session.date === activeDate)
       .filter((session) => {
         if (!term) return true;
 
@@ -222,12 +412,12 @@ function App() {
       .sort((first, second) =>
         first.time.localeCompare(second.time),
       );
-  }, [activeDate, search]);
+  }, [allSessions, activeDate, search, nameMap]);
 
   const selectedDayOrganizations = new Set(
-    SESSIONS.filter(
-      ({ date }) => date === activeDate,
-    ).map(({ orgAr }) => orgAr),
+    allSessions
+      .filter(({ date }) => date === activeDate)
+      .map(({ orgAr }) => orgAr),
   ).size;
 
   const toggleSession = (id) => {
@@ -292,13 +482,33 @@ function App() {
           />
 
           <Stat
-            value={SESSIONS.length}
+            value={allSessions.length}
             label="إجمالي الجلسات"
           />
         </section>
 
         <section className="mt-8">
-         
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-500">
+              اختر اليوم
+            </h2>
+
+            <button
+              onClick={() => setIsAddOpen(true)}
+              className="focus-ring flex min-h-11 items-center gap-1.5 rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-blue-800 sm:text-sm"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              إضافة جهة
+            </button>
+          </div>
 
           <div className="mt-4 flex gap-2 overflow-x-auto pb-2 md:grid md:grid-cols-5 md:overflow-visible">
             {dates.map((date) => {
@@ -430,7 +640,12 @@ function App() {
         </section>
       </main>
 
-      
+      {isAddOpen && (
+        <AddSessionModal
+          onClose={() => setIsAddOpen(false)}
+          onSave={handleAddSession}
+        />
+      )}
     </div>
   );
 }
