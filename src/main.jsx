@@ -28,18 +28,26 @@ const STAFF_PATH = '/staff';
 
 function Header({ staff = false }) {
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="safe-x mx-auto flex max-w-4xl items-center justify-between gap-6 py-8 md:py-16">
-        <h1 className="text-2xl font-extrabold leading-tight sm:text-5xl">
-          {staff ? 'إدارة جلسات المختبر' : 'تسجيل حضور الزوار'}
-        </h1>
+    <header className="bg-white shadow-sm">
+      <div className="safe-x mx-auto flex max-w-4xl items-center justify-between gap-6 py-4 md:py-5">
+        <div>
+          <h1 className="text-2xl font-extrabold leading-tight md:text-3xl">
+            {staff ? 'إدارة جلسات المختبر' : 'تسجيل حضور الزوار'}
+          </h1>
+          {!staff && (
+            <p className="mt-1 text-sm font-medium text-slate-500">
+              {formatDate(todayUAE())}
+            </p>
+          )}
+        </div>
 
         <img
           src="/logo.png"
           alt="شعار مشروع الذكاء الاصطناعي المساعد"
-          className="h-auto w-[clamp(130px,36vw,330px)] object-contain"
+          className="h-auto w-[clamp(120px,28vw,220px)] object-contain"
         />
       </div>
+      <div className="h-1 bg-gradient-to-l from-sky-300 via-blue-600 to-blue-800" />
     </header>
   );
 }
@@ -50,7 +58,7 @@ function Message({ children, type = 'error' }) {
   return (
     <div
       role={type === 'error' ? 'alert' : 'status'}
-      className={`rounded-full border px-8 py-4 text-sm font-semibold ${
+      className={`rounded-2xl border px-5 py-3 text-sm font-semibold ${
         type === 'error'
           ? 'border-rose-200 bg-rose-50 text-rose-800'
           : 'border-green-200 bg-green-50 text-green-700'
@@ -61,57 +69,88 @@ function Message({ children, type = 'error' }) {
   );
 }
 
-function StatCard({ value, label, highlight = false }) {
+function SummaryBanner({ entities, arrived, total, allSessions }) {
+  const percent = total ? Math.round((arrived / total) * 100) : 0;
+
   return (
-    <div
-      className={`rounded-3xl border p-4 sm:p-6 ${
-        highlight
-          ? 'border-blue-600 bg-gradient-to-br from-blue-500 to-blue-800 text-white shadow-lg shadow-blue-200'
-          : 'border-slate-200 bg-white text-slate-500 shadow-sm'
-      }`}
-    >
-      <p
-        className={`text-3xl font-extrabold sm:text-4xl ${
-          highlight ? 'text-white' : 'text-blue-800'
-        }`}
-      >
-        {value}
-      </p>
-      <p className="mt-3 text-xs font-medium sm:mt-5 sm:text-base">{label}</p>
-    </div>
+    <section className="flex items-center gap-5 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-800 px-5 py-4 text-white shadow-lg shadow-blue-200 md:gap-8 md:px-7">
+      <div className="shrink-0">
+        <p className="text-4xl font-extrabold leading-none md:text-5xl">
+          {entities}
+        </p>
+        <p className="mt-2 text-xs font-medium text-blue-100 md:text-sm">
+          الجهات — اليوم المحدد
+        </p>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-baseline justify-between text-xs md:text-sm">
+          <span className="font-medium text-blue-100">تم الحضور</span>
+          <span dir="ltr" className="font-bold">
+            {arrived} / {total}
+          </span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-white/25">
+          <div
+            className="h-full rounded-full bg-white transition-all duration-500"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="hidden shrink-0 border-s border-white/25 ps-6 sm:block">
+        <p className="text-3xl font-extrabold leading-none">{allSessions}</p>
+        <p className="mt-2 text-xs font-medium text-blue-100 md:text-sm">
+          إجمالي الجلسات
+        </p>
+      </div>
+    </section>
   );
 }
-
 
 function SessionCard({ session, entityName, busy, onArrive }) {
   const arrived = Boolean(session.arrived_at);
 
   return (
-    <article className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-md shadow-slate-200/60 sm:gap-4 sm:p-6">
-      <span className="shrink-0 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800 sm:px-4 sm:text-sm">
-        {formatTime(session.session_time)}
+    <article
+      className={`flex min-h-0 items-center gap-3 rounded-2xl border px-4 py-3 transition md:gap-4 ${
+        arrived
+          ? 'border-green-200 bg-green-50/70'
+          : 'border-slate-200 bg-white shadow-sm hover:shadow-md'
+      }`}
+    >
+      <span
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white transition md:h-12 md:w-12 ${
+          arrived
+            ? 'bg-green-600'
+            : 'bg-gradient-to-br from-blue-400 to-blue-700'
+        }`}
+      >
+        {arrived ? <CheckCircle2 size={24} /> : entityName.trim().charAt(0)}
       </span>
 
-      <span className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-700 text-lg font-bold text-white sm:flex">
-        {entityName.trim().charAt(0)}
-      </span>
-
-      <h3 className="min-w-0 flex-1 text-base font-extrabold leading-relaxed sm:text-2xl">
-        {entityName}
-      </h3>
+      <div className="min-w-0 flex-1">
+        <h3 className="line-clamp-2 text-base font-bold leading-snug md:text-lg">
+          {entityName}
+        </h3>
+        <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500 md:text-sm">
+          <Clock3 size={14} />
+          {formatTime(session.session_time)}
+        </p>
+      </div>
 
       <button
         type="button"
         aria-pressed={arrived}
         disabled={busy}
         onClick={onArrive}
-        className={`focus-ring flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition sm:px-7 sm:py-4 sm:text-base ${
+        className={`focus-ring flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-5 text-sm font-bold text-white transition active:scale-95 ${
           arrived
-            ? 'cursor-default bg-green-100 text-green-700 ring-1 ring-green-300'
-            : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+            ? 'cursor-default bg-green-600'
+            : 'bg-blue-700 shadow-md shadow-blue-200 hover:bg-blue-800'
         }`}
       >
-        {arrived && <CheckCircle2 size={20} />}
+        {arrived && <CheckCircle2 size={18} />}
         {arrived ? 'تم الحضور' : 'تسجيل الحضور'}
       </button>
     </article>
@@ -337,6 +376,11 @@ function VisitorApp() {
     [sessions, selectedDate]
   );
 
+  const arrivedCount = useMemo(
+    () => daySessions.filter((x) => x.arrived_at).length,
+    [daySessions]
+  );
+
   const dayEntitiesCount = useMemo(
     () => new Set(daySessions.map((s) => s.entity_id)).size,
     [daySessions]
@@ -378,29 +422,27 @@ function VisitorApp() {
     <div
       dir="rtl"
       lang="ar"
-      className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dbeafe,_#f8fafc_55%)]"
+      className="flex min-h-dvh flex-col bg-[radial-gradient(circle_at_top_right,_#dbeafe,_#f8fafc_50%)] md:h-dvh md:overflow-hidden"
     >
       <Header />
 
-      <main className="safe-x mx-auto max-w-4xl space-y-6 py-8 md:py-12">
+      <main className="safe-x mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-4 py-4 md:py-5">
         {!isSupabaseConfigured && (
           <Message>يرجى إعداد الاتصال بقاعدة البيانات.</Message>
         )}
 
         <Message>{error}</Message>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-5">
-          <StatCard
-            highlight
-            value={dayEntitiesCount}
-            label="الجهات — اليوم المحدد"
-          />
-          <StatCard value={sessions.length} label="إجمالي الجلسات" />
-        </div>
+        <SummaryBanner
+          entities={dayEntitiesCount}
+          arrived={arrivedCount}
+          total={daySessions.length}
+          allSessions={sessions.length}
+        />
 
-        {dates.length > 0 && (
+        <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
           <div
-            className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2"
+            className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"
             role="tablist"
           >
             {dates.map((d) => {
@@ -414,60 +456,59 @@ function VisitorApp() {
                     setSelectedDate(d);
                     setError('');
                   }}
-                  className={`focus-ring min-w-[84px] flex-1 rounded-2xl border px-4 py-4 text-center transition ${
+                  className={`focus-ring relative min-h-12 min-w-[92px] flex-1 rounded-xl px-3 py-1.5 text-center transition ${
                     active
-                      ? 'border-blue-700 bg-blue-700 text-white shadow-lg shadow-blue-200'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      ? 'bg-blue-700 text-white shadow-md shadow-blue-200'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="block text-base font-extrabold sm:text-xl">
+                  <span className="block text-sm font-extrabold md:text-base">
                     {formatWeekday(d)}
                   </span>
                   <span
-                    className={`mt-1 block text-xs sm:text-sm ${
+                    className={`block text-xs ${
                       active ? 'text-blue-100' : 'text-slate-400'
                     }`}
                   >
                     {formatDayMonth(d)}
                   </span>
+                  {d === today && (
+                    <span
+                      className={`absolute left-2 top-2 h-2 w-2 rounded-full ${
+                        active ? 'bg-white' : 'bg-green-500'
+                      }`}
+                      title="اليوم"
+                    />
+                  )}
                 </button>
               );
             })}
           </div>
-        )}
 
-        {showAdd ? (
-          <AddSessionPanel
-            entities={entities}
-            defaultDate={selectedDate || today}
-            onCancel={() => setShowAdd(false)}
-            onSaved={(date) => {
-              setShowAdd(false);
-              loadData(date);
-            }}
-          />
-        ) : (
           <button
             type="button"
             onClick={() => setShowAdd(true)}
             disabled={!supabase}
-            className="focus-ring flex w-full items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-blue-300 bg-white/70 px-6 py-5 text-base font-bold text-blue-800 transition hover:bg-blue-50 disabled:opacity-50"
+            className="focus-ring flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-white px-6 text-sm font-bold text-blue-800 shadow-sm transition hover:bg-blue-50 disabled:opacity-50"
           >
-            <Plus size={22} />
-            إضافة جهة في موعد
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-700 text-white">
+              <Plus size={16} />
+            </span>
+            إضافة جهة
           </button>
-        )}
+        </div>
 
         {loading ? (
           <p className="py-10 text-center text-slate-500">جارٍ التحميل...</p>
         ) : daySessions.length === 0 ? (
           !error && (
-            <p className="py-10 text-center text-slate-500">
-              لا توجد جلسات في هذا اليوم.
-            </p>
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-slate-200 bg-white/60 py-12 text-slate-400">
+              <CalendarDays size={40} />
+              <p className="font-semibold">لا توجد جلسات في هذا اليوم</p>
+            </div>
           )
         ) : (
-          <div className="space-y-4">
+          <div className="grid min-h-0 flex-1 grid-cols-1 content-start gap-3 overflow-y-auto pb-1 md:[grid-auto-rows:minmax(72px,92px)]">
             {daySessions.map((session) => (
               <SessionCard
                 key={session.id}
@@ -479,11 +520,29 @@ function VisitorApp() {
             ))}
           </div>
         )}
-
-        <p className="pt-4 text-center text-xs text-slate-500">
-          للمساعدة، يرجى التواصل مع فريق مختبر تجربة المستخدم
-        </p>
       </main>
+
+      {showAdd && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-sm"
+          onClick={() => setShowAdd(false)}
+        >
+          <div
+            className="w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <AddSessionPanel
+              entities={entities}
+              defaultDate={selectedDate || today}
+              onCancel={() => setShowAdd(false)}
+              onSaved={(date) => {
+                setShowAdd(false);
+                loadData(date);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
