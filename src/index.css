@@ -1,0 +1,118 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Alexandria', sans-serif;
+}
+
+/* General styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #020617;
+  font-family: 'Alexandria', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* White panels */
+.panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Focus style */
+.focus-ring:focus-visible {
+  outline: 3px solid #bfdbfe;
+  outline-offset: 2px;
+}
+
+/* Inputs */
+.field {
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.field:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px #dbeafe;
+}
+
+/* Main buttons */
+.primary-btn {
+  min-height: 56px;
+  padding: 12px 24px;
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+
+.primary-btn:hover {
+  background: #1e40af;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+}
+
+/* Secondary buttons */
+.secondary-btn {
+  min-height: 48px;
+  padding: 12px 20px;
+  background: white;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.secondary-btn:hover {
+  background: #f8fafc;
+}
+
+/* iPad safe spacing */
+.safe-x {
+  padding-inline-start: max(1rem, env(safe-area-inset-left));
+  padding-inline-end: max(1rem, env(safe-area-inset-right));
+}
+
+@media (min-width: 768px) {
+  .safe-x {
+    padding-inline-start: max(2rem, env(safe-area-inset-left));
+    padding-inline-end: max(2rem, env(safe-area-inset-right));
+  }
+}
